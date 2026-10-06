@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The MOIN Process — Demand Gen</title>
+<link rel="stylesheet" href="../lib/engine.css">
+<link rel="expect" href="#bar" blocking="render"><!-- hold the first frame until the player exists, so the page transition can run -->
+</head>
+<body>
+<script src="../lib/engine.js"></script>
+<script src="audio/en/timings.js"></script>
+<script>
+'use strict';
+const CHAPTER = { number: 2, title: 'The MOIN Process', minutes: 7, language: 'en' };   // set next once the next chapter exists
+
+/* ---------- chapter drawing helpers ---------- */
+const text = (p, str, x, y, t0, { size = 30, fill = COL.chalk, anchor = 'start', weight = 500 } = {}) => { const e = T(p, str, { x, y, size, fill, anchor, weight, o: 0 }); show(e, t0); return e; };
+const node = (p, x, y, label, color, r = 86) => {
+  const g = G(p, { x, y, o: 0 });
+  mk('circle', { r, fill: mix(COL.board, color, .3), stroke: color, 'stroke-width': 3 }, g);
+  T(g, label, { y: 10, size: 26, fill: COL.chalk, anchor: 'middle', weight: 600 });
+  return g;
+};
+
+/* ---------- beats: [id, title, run(m, D), { ask }?] ---------- */
+const BEATS = [
+  ['intro', 'The MOIN Process', (m, D) => {
+    const g = G(scene, { o: 0, y: 24 });
+    T(g, 'Chapter 2', { x: 800, y: 320, size: 28, fill: COL.dim, anchor: 'middle' });
+    T(g, 'The MOIN Process', { x: 800, y: 430, size: 88, weight: 600, anchor: 'middle' });
+    tw(g, { o: 1, y: 0 }, .2, 1.1, out);
+    const r = text(scene, 'Map every question your buyers ask — answer each one best.', 800, 600, m('sub'), { size: 34, fill: COL.dim, anchor: 'middle' });
+    tw(g, { o: 0, y: -24 }, D - .9, .8); hide(r, D - .9, .8);
+  }],
+  ['committee', 'Map the committee', (m) => {
+    const p = panel(0);
+    const center = node(p, 760, 430, 'Account', COL.chalk, 96);
+    tw(center, { o: 1 }, m('map'), .5);
+    const roles = [['Champion', COL.task, 330, 250], ['Economic buyer', COL.whole, 1190, 250],
+                   ['Evaluator', COL.real, 300, 620], ['Procurement', COL.nat, 1220, 620],
+                   ['Influencers', COL.dim, 760, 740]];
+    roles.forEach(([label, color, x, y], i) => {
+      const line = path(p, `M${760 + (x - 760) * .3} ${430 + (y - 430) * .3}L${x + (760 - x) * .25} ${y + (430 - y) * .15}`, { stroke: COL.faint, 'stroke-width': 2 }, { o: 0 });
+      show(line, m('roles') + i * .3, .3);
+      const g = node(p, x, y, label, color, 78);
+      tw(g, { o: 1 }, m('roles') + i * .3, .4, back);
+    });
+    text(p, 'name each one — seniority, and where they listen', 800, 856, m('roles') + 1.8, { size: 28, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['grid', 'The MOIN grid', (m) => {
+    const p = panel(0);
+    const stages = ['Problem aware', 'Solution aware', 'Active evaluation', 'Commitment'];
+    const rows = [
+      ['Champion', 'How do I convince my boss?', 'Which is easiest to run?', 'A demo with our data?', 'What does onboarding look like?'],
+      ['Economic buyer', 'Is this big enough to fund?', 'What is the ROI?', 'How does it compare on cost?', 'What is the risk?'],
+      ['Evaluator', 'Does it fit our stack?', 'What is the architecture?', 'Can we run a POC?', 'What is the SLA?'],
+    ];
+    stages.forEach((s, i) => text(p, s, 430 + i * 272, 150, .2 + i * .08, { size: 25, fill: COL.task, anchor: 'middle', weight: 600 }));
+    rows.forEach(([role, ...cells], r) => {
+      const y = 200 + r * 158;
+      text(p, role, 284, y + 66, .4 + r * .15, { size: 26, fill: COL.chalk, anchor: 'end', weight: 600 });
+      cells.forEach((c, i) => {
+        const g = G(p, { x: 300 + i * 272, y, o: 0 });
+        mk('rect', { width: 256, height: 126, rx: 10, fill: mix(COL.board, COL.whole, .1), stroke: COL.faint, 'stroke-width': 1.5 }, g);
+        T(g, c, { x: 128, y: 44, size: 21, fill: COL.dim, anchor: 'middle' });
+        tw(g, { o: 1 }, m('grid') + r * .5 + i * .12, .35);
+      });
+    });
+    text(p, 'every cell: the questions that role asks at that stage', 800, 740, m('questions'), { size: 30, fill: COL.task, anchor: 'middle', weight: 600 });
+  }],
+  ['q1', 'Quick check', () => {
+    const p = panel(0);
+    const g = G(p, { x: 800, y: 360, o: 0 });
+    mk('rect', { width: 480, height: 120, rx: 12, fill: mix(COL.board, COL.whole, .12), stroke: COL.faint, 'stroke-width': 1.5 }, g);
+    T(g, '?', { x: 240, y: 78, size: 64, fill: COL.task, anchor: 'middle', weight: 700 });
+    tw(g, { o: 1 }, .25, .5);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-cell',
+    prompt: ['What goes inside each cell of the grid?'],
+    build: choice([['A pitch'], ['Their questions'], ['Competitors']], 1,
+      'MOIN maps their informational needs — their questions.',
+      ['MOIN starts from their needs, not your pitch.', null, 'Comparisons come late — the grid starts at awareness.']),
+  }], done) }],
+  ['bar', 'The 3x-5x bar', (m) => {
+    const p = panel(0);
+    text(p, 'the best answer today', 340, 260, .3, { size: 28, fill: COL.dim, anchor: 'end' });
+    const bar1 = rect(p, 380, 218, 300, 60, mix(COL.board, COL.faint, .35), 0, COL.faint);
+    tw(bar1, { o: 1 }, .4, .5);
+    text(p, 'yours — 3 to 5 times better', 340, 440, m('existing'), { size: 28, fill: COL.good, anchor: 'end', weight: 600 });
+    const bar2 = rect(p, 380, 398, 1080, 60, mix(COL.board, COL.good, .4), 0, COL.good);
+    put(bar2, { a_width: 0 });
+    tw(bar2, { o: 1, a_width: 1080 }, m('existing'), 1.2);
+    ['original data', 'expert voices', 'interactive tools', 'real numbers'].forEach((s, i) => {
+      const c = chip(p, [s], COL.task, { x: 480 + i * 260, y: 600, size: 30, o: 0, s: .6 });
+      pop(c, m('better') + i * .25);
+    });
+    text(p, 'cannot reach the bar? skip the topic.', 800, 720, m('better') + 1.4, { size: 30, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['q2', 'Quick check', () => {
+    const p = panel(0);
+    const c = chip(p, ['quality gate'], COL.task, { x: 800, y: 350, size: 36, o: 0, s: .6 });
+    pop(c, .25);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-checks',
+    prompt: ['How many checks must a piece pass before publishing?'],
+    build: blanks([{ parts: ['Every piece passes ', { box: '5' }, ' checks.'],
+      why: 'Relevant, actionable, differentiated, aligned, repurposeable.',
+      hint: 'One per quality criterion.' }]),
+  }], done) }],
+  ['channels', 'Map to channels', (m) => {
+    const p = panel(0);
+    const row = (y, kind, home, color, t0) => {
+      text(p, kind, 400, y, t0, { size: 30, fill: COL.chalk, anchor: 'end', weight: 600 });
+      const c = chip(p, [home], color, { x: 900, y, size: 32, o: 0, s: .6 });
+      pop(c, t0 + .2);
+      const others = chip(p, ['elsewhere'], COL.faint, { x: 1260, y, size: 27, o: 0, s: .6 });
+      pop(others, t0 + .35);
+      text(p, 'primary →', 640, y + 1, t0 + .15, { size: 22, fill: COL.dim, anchor: 'end' });
+    };
+    row(250, 'Thought leadership', 'LinkedIn', COL.task, .3);
+    row(430, 'How-to guides', 'Blog', COL.whole, m('channels') + .3);
+    row(610, 'Case studies', 'Email', COL.good, m('channels') + .8);
+    text(p, 'each type has a home channel', 800, 760, m('channels') + 1.5, { size: 28, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['calendar', 'The calendar', (m) => {
+    const p = panel(0);
+    for (let w = 0; w < 4; w++) {
+      const x = 220 + w * 300;
+      const g = G(p, { x, y: 220, o: 0 });
+      mk('rect', { width: 250, height: 340, rx: 12, fill: mix(COL.board, COL.whole, .07), stroke: COL.faint, 'stroke-width': 1.5 }, g);
+      T(g, `Week ${w + 1}`, { x: 125, y: 40, size: 26, fill: COL.dim, anchor: 'middle', weight: 600 });
+      tw(g, { o: 1 }, .2 + w * .2, .4);
+      for (let i = 0; i < 3; i++) {
+        const d = G(g, { x: 125, y: 100 + i * 62, o: 0 });
+        mk('circle', { r: 9, fill: COL.task }, d);
+        T(d, 'LinkedIn post', { x: 22, y: 8, size: 21, fill: COL.chalk });
+        tw(d, { o: 1 }, m('linkedin') + w * .3 + i * .15, .3);
+      }
+    }
+    text(p, 'LinkedIn validates first — blogs grow from the posts that worked', 800, 660, m('derived'), { size: 28, fill: COL.dim, anchor: 'middle' });
+    text(p, 'email sequences grow from blogs — webinars come last', 800, 710, m('derived') + .5, { size: 28, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['q3', 'Quick check', () => {
+    const p = panel(0);
+    const c = chip(p, ['case study'], COL.good, { x: 800, y: 350, size: 36, o: 0, s: .6 });
+    pop(c, .25);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-channel',
+    prompt: ['A case study is finished. Which channel carries it first?'],
+    build: choice([['LinkedIn'], ['Blog'], ['Email']], 2,
+      'The matrix: case studies travel primarily by email.',
+      ['LinkedIn amplifies it — email carries it.', 'Blogs carry how-to pieces primarily.', null]),
+  }], done) }],
+  ['wrap', 'Summary', (m) => {
+    const p = panel(0);
+    [['Map the committee, then the grid — their questions, not your pitch.', 'w1'],
+     ['Nothing is written until it can be 3 to 5 times better.', 'w2'],
+     ['LinkedIn validates, blogs expand, email nurtures, webinars land.', 'w3']].forEach(([str, mark], i) => {
+      const g = G(p, { x: -16, y: 280 + i * 150, o: 0 });
+      mk('circle', { cx: 200, cy: -12, r: 26, fill: COL.task }, g);
+      T(g, String(i + 1), { x: 200, y: -1, size: 30, fill: COL.board, weight: 700, anchor: 'middle' });
+      T(g, str, { x: 260, size: 33, weight: 600 });
+      tw(g, { o: 1, x: 0 }, m(mark), .6);
+    });
+    text(p, 'Now try the chapter practice.', 800, 820, m('end'), { size: 30, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['final1', 'Chapter practice', () => { panel(0); }, { ask: done => quiz(SCREEN, [
+    { id: 'p-calendar',
+      prompt: ['The content calendar template: how long is one sprint, and how many LinkedIn posts run each week?'],
+      build: blanks([{ parts: ['A ', { box: '4' }, '-week sprint, ', { box: '3' }, ' LinkedIn posts a week.'],
+        why: 'The template: four weeks, Monday–Wednesday–Friday posts.',
+        hint: 'Weeks and weekly post count.' }]),
+    },
+  ], done, 'Chapter practice') }],
+  ['final2', 'Chapter practice', () => { panel(0); }, { ask: done => quiz(SCREEN, [
+    { id: 'p-cells',
+      prompt: ['The worked grid: three roles across four stages. How many cells must you fill?'],
+      build: blanks([{ parts: [{ box: '3' }, ' roles × ', { box: '4' }, ' stages = 12 cells.'],
+        why: 'Twelve cells — twelve real questions to answer better than anyone.',
+        hint: 'Roles and stages from the worked grid.' }]),
+    },
+  ], done, 'Chapter practice') }],
+  ['finish', 'Finished', () => { panel(0); }, { ask: finishCard }],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>

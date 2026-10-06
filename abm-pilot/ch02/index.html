@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The ICP — Five Pillars — ABM</title>
+<link rel="stylesheet" href="../lib/engine.css">
+<link rel="expect" href="#bar" blocking="render"><!-- hold the first frame until the player exists, so the page transition can run -->
+</head>
+<body>
+<script src="../lib/engine.js"></script>
+<script src="audio/en/timings.js"></script>
+<script>
+'use strict';
+const CHAPTER = { number: 2, title: 'The ICP — Five Pillars', minutes: 8, language: 'en' };   // set next once the next chapter exists
+
+/* ---------- chapter drawing helpers ---------- */
+const text = (p, str, x, y, t0, { size = 30, fill = COL.chalk, anchor = 'start', weight = 500 } = {}) => { const e = T(p, str, { x, y, size, fill, anchor, weight, o: 0 }); show(e, t0); return e; };
+
+/* ---------- beats: [id, title, run(m, D), { ask }?] ---------- */
+const BEATS = [
+  ['intro', 'The ICP — Five Pillars', (m, D) => {
+    const g = G(scene, { o: 0, y: 24 });
+    T(g, 'Chapter 2', { x: 800, y: 320, size: 28, fill: COL.dim, anchor: 'middle' });
+    T(g, 'The ICP — Five Pillars', { x: 800, y: 430, size: 88, weight: 600, anchor: 'middle' });
+    tw(g, { o: 1, y: 0 }, .2, 1.1, out);
+    const r = text(scene, 'Know exactly who can buy from you.', 800, 600, m('sub'), { size: 34, fill: COL.dim, anchor: 'middle' });
+    tw(g, { o: 0, y: -24 }, D - .9, .8); hide(r, D - .9, .8);
+  }],
+  ['pillars', 'Five pillars', (m) => {
+    const p = panel(0);
+    const names = ['Firmographics', 'Committee', 'Qualification', 'Segmentation', 'Enrichment'];
+    names.forEach((n, i) => {
+      const x = 190 + i * 270;
+      const g = G(p, { x, y: 240, o: 0 });
+      mk('rect', { width: 240, height: 90, rx: 14, fill: mix(COL.board, COL.whole, i === 0 ? .3 : .1), stroke: i === 0 ? COL.task : COL.faint, 'stroke-width': i === 0 ? 3 : 1.5 }, g);
+      T(g, `${i + 1}. ${n}`, { x: 120, y: 53, size: 24, fill: COL.chalk, anchor: 'middle', weight: 600 });
+      tw(g, { o: 1 }, m('pillars') + i * .25, .4, back);
+    });
+    text(p, 'built from your best customers — the top 20%', 800, 470, m('firmo'), { size: 30, fill: COL.dim, anchor: 'middle' });
+    text(p, 'generate 80% of the revenue', 800, 520, m('pareto'), { size: 34, fill: COL.good, anchor: 'middle', weight: 600 });
+    ['industry', 'revenue', 'headcount', 'geography', 'growth'].forEach((s, i) => {
+      const c = chip(p, [s], COL.whole, { x: 350 + i * 230, y: 680, size: 27, o: 0, s: .6 });
+      pop(c, m('pareto') + .6 + i * .15);
+    });
+  }],
+  ['q1', 'Quick check', () => {
+    const p = panel(0);
+    const c = chip(p, ['100–500 people'], COL.whole, { x: 800, y: 350, size: 32, o: 0, s: .6 });
+    pop(c, .25);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-influence',
+    prompt: ['How many people influence a purchase at this size?'],
+    build: choice([['About 3'], ['About 7'], ['About 20']], 1,
+      'Harvard Business Review: about seven at this company size.',
+      ['Too few — committees are bigger than you think.', null, 'That is enterprise scale; here it is about seven.']),
+  }], done) }],
+  ['concentration', 'Concentration', (m) => {
+    const p = panel(0);
+    const rows = [['Industrial Automation', 27.4, COL.whole], ['Automotive Components', 17.7, COL.task],
+                  ['Process Manufacturing', 15.9, COL.real], ['Electrical Equipment', 11.5, COL.nat]];
+    rows.forEach(([name, pct, color], i) => {
+      const y = 210 + i * 105;
+      text(p, name, 480, y + 30, .3 + i * .2, { size: 27, fill: COL.chalk, anchor: 'end' });
+      const bar = rect(p, 510, y, pct * 22, 58, mix(COL.board, color, .35), 0, color);
+      put(bar, { a_width: 0 });
+      tw(bar, { o: 1, a_width: pct * 22 }, .4 + i * .25, .8);
+      text(p, pct + '%', 530 + pct * 22, y + 38, .6 + i * .25, { size: 25, fill: color });
+    });
+    const line = text(p, 'top 4 verticals: 72.6% of revenue — from 58% of customers', 800, 720, m('concentration'), { size: 30, fill: COL.task, anchor: 'middle', weight: 600 });
+    pulse(line, m('concentration') + .8, 1.05);
+  }],
+  ['qualify', 'Qualify and disqualify', (m) => {
+    const p = panel(0);
+    const col = (x, title, color, items, t0) => {
+      const g = G(p, { x, y: 150, o: 0 });
+      mk('rect', { width: 640, height: 520, rx: 14, fill: mix(COL.board, color, .1), stroke: color, 'stroke-width': 2.5 }, g);
+      T(g, title, { x: 320, y: 52, size: 30, fill: color, anchor: 'middle', weight: 700 });
+      tw(g, { o: 1 }, t0, .5);
+      items.forEach((s, i) => {
+        const l = T(g, '· ' + s, { x: 40, y: 110 + i * 62, size: 26, fill: COL.chalk, o: 0 });
+        show(l, t0 + .3 + i * .2, .35);
+      });
+    };
+    col(110, 'must pass ALL', COL.good, ['revenue + industry fit', 'committee reachable', 'budget evidence', 'need evidence'], m('must'));
+    col(850, 'any one excludes', COL.bad, ['builds it in-house', 'locked into a competitor', 'outside your geography', 'below the ACV floor'], m('disqualify'));
+    text(p, 'disqualifiers come from your lost deals', 800, 760, m('lost'), { size: 30, fill: COL.task, anchor: 'middle', weight: 600 });
+  }],
+  ['q2', 'Quick check', () => {
+    const p = panel(0);
+    const c = chip(p, ['20% → 80%'], COL.good, { x: 800, y: 350, size: 36, o: 0, s: .6 });
+    pop(c, .25);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-pareto',
+    prompt: ['The Pareto rule for building firmographics.'],
+    build: blanks([{ parts: ['The top ', { box: '20' }, '% of customers generate ', { box: '80' }, '% of revenue.'],
+      why: 'Analyze the best customers; the concentration becomes your foundation.',
+      hint: 'The classic 80/20 split.' }]),
+  }], done) }],
+  ['clusters', 'Clusters', (m) => {
+    const p = panel(0);
+    [['Scaling production', 'quality at volume', 380, COL.whole], ['Industry 4.0', 'legacy meets new', 800, COL.task], ['New markets', 'compliance + localization', 1220, COL.real]].forEach(([name, sub, x, color], i) => {
+      const g = G(p, { x, y: 320, o: 0 });
+      mk('circle', { r: 118, fill: mix(COL.board, color, .22), stroke: color, 'stroke-width': 3 }, g);
+      T(g, name, { y: -10, size: 26, fill: COL.chalk, anchor: 'middle', weight: 600 });
+      T(g, sub, { y: 28, size: 21, fill: COL.dim, anchor: 'middle' });
+      tw(g, { o: 1 }, m('clusters') + i * .4, .5, back);
+    });
+    text(p, 'shared challenges → shared messaging → 1:few programs', 800, 560, m('clusters') + 1.5, { size: 29, fill: COL.dim, anchor: 'middle' });
+    text(p, 'segment by sub-vertical, use case, maturity, relationship stage', 800, 640, m('clusters') + 2, { size: 26, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['enrich', 'Enrich & validate', (m) => {
+    const p = panel(0);
+    [['LinkedIn', 'low'], ['Job postings', 'free'], ['Press releases', 'free'], ['Conferences', 'free'], ['Intent data', '$$$']].forEach(([s, cost], i) => {
+      const x = 220 + i * 240;
+      const c = chip(p, [s], COL.whole, { x, y: 250, size: 27, o: 0, s: .6 });
+      pop(c, m('sources') + i * .2);
+      text(p, cost, x, 310, m('sources') + .1 + i * .2, { size: 22, fill: COL.dim, anchor: 'middle' });
+    });
+    const g = G(p, { x: 800, y: 520, o: 0 });
+    mk('rect', { width: 900, height: 190, rx: 14, fill: mix(COL.board, COL.task, .12), stroke: COL.task, 'stroke-width': 2.5 }, g);
+    T(g, 'The Diver survey', { x: 450, y: 56, size: 30, fill: COL.task, anchor: 'middle', weight: 700 });
+    T(g, '6 question groups · 20–30 minutes · findings shared back', { x: 450, y: 110, size: 26, fill: COL.chalk, anchor: 'middle' });
+    T(g, 'framed as collaboration, not a sales call', { x: 450, y: 152, size: 24, fill: COL.dim, anchor: 'middle' });
+    tw(g, { o: 1 }, m('diver'), .6);
+  }],
+  ['q3', 'Quick check', () => {
+    const p = panel(0);
+    const c1 = chip(p, ['ICP'], COL.task, { x: 640, y: 350, size: 36, o: 0, s: .6 });
+    const c2 = chip(p, ['personas'], COL.dim, { x: 960, y: 350, size: 36, o: 0, s: .6 });
+    pop(c1, .25); pop(c2, .45);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-first',
+    prompt: ['Which comes first?'],
+    build: choice([['The ICP'], ['Buyer personas'], ['They are the same']], 0,
+      'Personas live inside ICP companies — define the company first.',
+      [null, 'Personas without an ICP resonate at companies that cannot buy.', 'Different scopes: company vs individual.']),
+  }], done) }],
+  ['wrap', 'Summary', (m) => {
+    const p = panel(0);
+    [['Firmographics from your best customers — 20% make the 80%.', 'w1'],
+     ['Qualification passes on everything; disqualification excludes on anything.', 'w2'],
+     ['The ICP holds the company; personas live inside it.', 'w3']].forEach(([str, mark], i) => {
+      const g = G(p, { x: -16, y: 280 + i * 150, o: 0 });
+      mk('circle', { cx: 200, cy: -12, r: 26, fill: COL.task }, g);
+      T(g, String(i + 1), { x: 200, y: -1, size: 30, fill: COL.board, weight: 700, anchor: 'middle' });
+      T(g, str, { x: 260, size: 33, weight: 600 });
+      tw(g, { o: 1, x: 0 }, m(mark), .6);
+    });
+    text(p, 'Now try the chapter practice.', 800, 820, m('end'), { size: 30, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['final1', 'Chapter practice', () => { panel(0); }, { ask: done => quiz(SCREEN, [
+    { id: 'p-committee',
+      prompt: ['Influence and qualification — fill in both numbers.'],
+      build: blanks([{ parts: ['About ', { box: '7' }, ' people influence a purchase; reach at least ', { box: '2' }, ' roles to qualify.'],
+        why: 'Seven influencers (HBR, 100–500 employees); qualification needs two reachable roles.',
+        hint: 'Influence count, then reachable roles.' }]),
+    },
+  ], done, 'Chapter practice') }],
+  ['final2', 'Chapter practice', () => { panel(0); }, { ask: done => quiz(SCREEN, [
+    { id: 'p-diver',
+      prompt: ['The Diver survey method — fill in both numbers.'],
+      build: blanks([{ parts: [{ box: '6' }, ' question groups, in a ', { box: '20' }, '-to-30-minute interview.'],
+        why: 'Structured customer interviews validate the ICP better than assumptions.',
+        hint: 'Question groups, then minimum minutes.' }]),
+    },
+  ], done, 'Chapter practice') }],
+  ['finish', 'Finished', () => { panel(0); }, { ask: finishCard }],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>
