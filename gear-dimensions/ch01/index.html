@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spur Gear Dimensions — Gear Dimensions</title>
+<link rel="stylesheet" href="../lib/engine.css">
+<link rel="expect" href="#bar" blocking="render"><!-- hold the first frame until the player exists, so the page transition can run -->
+</head>
+<body>
+<script src="../lib/engine.js"></script>
+<script src="audio/en/timings.js"></script>
+<script>
+'use strict';
+const CHAPTER = { number: 1, title: 'Spur Gear Dimensions', minutes: 6, language: 'en' };   // set next once the next chapter exists
+
+/* ---------- chapter drawing helpers ---------- */
+const text = (p, str, x, y, t0, { size = 30, fill = COL.chalk, anchor = 'start', weight = 500 } = {}) => { const e = T(p, str, { x, y, size, fill, anchor, weight, o: 0 }); show(e, t0); return e; };
+// A stylized spur gear around (cx, cy): trapezoid teeth + pitch (dashed), tip and root circles.
+// Drawn at 4 px per millimeter (px). Returns { g, teeth } — rotate the whole group via put(g, { r }).
+const PXMM = 4;
+const gearSil = (p, cx, cy, z, m, color, { teeth = true, spinPhase = 0 } = {}) => {
+  const rP = z * m / 2 * PXMM, rT = rP + m * PXMM, rR = rP - 1.25 * m * PXMM;
+  const g = G(p, { x: cx, y: cy, o: 0 });
+  if (teeth) {
+    const half = Math.PI / z, hw = half * .36, tw = half * .20;
+    for (let i = 0; i < z; i++) {
+      const a = spinPhase + i * 2 * half;
+      const d = `M${rR * Math.cos(a - hw)} ${rR * Math.sin(a - hw)}`
+        + `L${rT * Math.cos(a - tw)} ${rT * Math.sin(a - tw)}`
+        + `L${rT * Math.cos(a + tw)} ${rT * Math.sin(a + tw)}`
+        + `L${rR * Math.cos(a + hw)} ${rR * Math.sin(a + hw)}Z`;
+      mk('path', { d, fill: mix(COL.board, color, .22), stroke: color, 'stroke-width': 2 }, g);
+    }
+  }
+  path(g, `M${-rP} 0A${rP} ${rP} 0 1 1 ${rP} 0M${-rP} 0A${rP} ${rP} 0 1 1 ${-rP} 0`, { stroke: color, 'stroke-width': 2.5, 'stroke-dasharray': '9 8' });
+  mk('circle', { r: rT, fill: 'none', stroke: COL.faint, 'stroke-width': 1.5 }, g);
+  mk('circle', { r: rR, fill: 'none', stroke: COL.faint, 'stroke-width': 1.5 }, g);
+  mk('circle', { r: 5, fill: color }, g);
+  return { g, rP, rT, rR };
+};
+const chipLab = (p, str, color, x, y, t0) => {
+  const c = chip(p, [str], color, { x, y, size: 32, o: 0, s: .6 });
+  pop(c, t0);
+  return c;
+};
+
+/* ---------- beats: [id, title, run(m, D), { ask }?] ---------- */
+const BEATS = [
+  ['intro', 'Spur Gear Dimensions', (m, D) => {
+    const g = G(scene, { o: 0, y: 24 });
+    T(g, 'Chapter 1', { x: 800, y: 320, size: 28, fill: COL.dim, anchor: 'middle' });
+    T(g, 'Spur Gear Dimensions', { x: 800, y: 430, size: 88, weight: 600, anchor: 'middle' });
+    tw(g, { o: 1, y: 0 }, .2, 1.1, out);
+    const r = text(scene, 'One number — the module — sizes the whole gear.', 800, 600, m('sub'), { size: 34, fill: COL.dim, anchor: 'middle' });
+    tw(g, { o: 0, y: -24 }, D - .9, .8); hide(r, D - .9, .8);
+  }],
+  ['module', 'The module', (m) => {
+    const p = panel(0);
+    const pin = gearSil(p, 540, 430, 12, 3, COL.whole);
+    tw(pin.g, { o: 1 }, .3, .6);
+    text(p, '12 teeth', 540, 580, .9, { size: 30, fill: COL.dim, anchor: 'middle' });
+    chipLab(p, 'm = 3', COL.task, 1160, 230, m('module'));
+    eqLine(p, 'd', 'zm', 330, m('pitchd'), { xEq: 1150 });
+    eqLine(p, 'd', '3 × 12 = 36', 430, m('thirtysix'), { xEq: 1150, fill: COL.good });
+  }],
+  ['q1', 'Quick check', () => {
+    const p = panel(0);
+    const pin = gearSil(p, 800, 350, 10, 4, COL.whole);
+    tw(pin.g, { o: 1 }, .25, .5);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-pitch',
+    prompt: ['Module 4, ten teeth. The pitch diameter?'],
+    build: choice([['14 mm'], ['2.5 mm'], ['40 mm']], 2,
+      'Module times teeth: 4 × 10 = 40.',
+      ['That adds them — multiply.', 'That divides them — multiply.', null]),
+  }], done) }],
+  ['addendum', 'Above and below', (m) => {
+    const p = panel(0);
+    const pin = gearSil(p, 540, 430, 12, 3, COL.whole);
+    tw(pin.g, { o: 1 }, .3, .6);
+    // radial measures on the topmost tooth
+    const up = path(p, `M540 ${430 - pin.rP}V${430 - pin.rT}`, { stroke: COL.task, 'stroke-width': 4 }, { o: 0 });
+    show(up, m('addendum'), .4);
+    const dn = path(p, `M540 ${430 - pin.rP}V${430 - pin.rR}`, { stroke: COL.nat, 'stroke-width': 4 }, { o: 0 });
+    show(dn, m('dedendum'), .4);
+    text(p, '1 m', 575, 430 - pin.rP + (pin.rP - pin.rT) / 2, m('addendum') + .2, { size: 28, fill: COL.task });
+    text(p, '1.25 m', 575, 430 - pin.rP / 2, m('dedendum') + .2, { size: 28, fill: COL.nat });
+    text(p, 'tooth depth 2.25 m', 540, 620, m('depth'), { size: 28, fill: COL.dim, anchor: 'middle' });
+    eqLine(p, 'da', 'd + 2m = 42', 330, m('tipd'), { xEq: 1150, fill: COL.task });
+    eqLine(p, 'df', 'd − 2.5m = 28.5', 430, m('rootd'), { xEq: 1150, fill: COL.nat });
+  }],
+  ['q2', 'Quick check', () => {
+    const p = panel(0);
+    const pin = gearSil(p, 800, 340, 12, 3, COL.whole);
+    tw(pin.g, { o: 1 }, .25, .5);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-tip',
+    prompt: ['Module 3, twelve teeth. The tip diameter?'],
+    build: blanks([{ parts: ['da = ', { box: '42' }],
+      why: 'd = 36, and the tips add 2m = 6.',
+      hint: 'd + 2m, with d = 3 × 12.' }]) },
+  { id: 'c-root',
+    prompt: ['And the root diameter?'],
+    build: blanks([{ parts: ['df = ', { box: '28.5' }],
+      why: 'd − 2.5m = 36 − 7.5 = 28.5.',
+      hint: 'd − 2.5 × 3.' }]) },
+  ], done) }],
+  ['mesh', 'Meshing', (m) => {
+    const p = panel(0);
+    const c1 = 420, c2 = 636;   // centers rP apart: 72 + 144 = 216
+    const pin = gearSil(p, c1, 400, 12, 3, COL.whole);
+    const gear = gearSil(p, c2, 400, 24, 3, COL.real, { spinPhase: Math.PI / 24 });
+    tw(pin.g, { o: 1 }, .3, .6);
+    tw(gear.g, { o: 1 }, .5, .6);
+    text(p, 'O1', c1, 446, .8, { size: 26, fill: COL.whole, anchor: 'middle', font: MATH });
+    text(p, 'O2', c2, 592, 1, { size: 26, fill: COL.real, anchor: 'middle', font: MATH });
+    prog(q => { put(pin.g, { r: q * 360 }); put(gear.g, { r: -q * 180 }); }, m('ratio'), 3.2, lin);
+    text(p, '12 teeth drive 24 — half the speed', (c1 + c2) / 2, 660, m('ratio') + 3.3, { size: 28, fill: COL.dim, anchor: 'middle' });
+    bracketH(p, c1 - 72, c2 + 144, 760, 'a = 54 mm', COL.whole, m('centerd'));
+    eqLine(p, 'a', '(z1 + z2) m / 2', 240, m('centerd') + .6, { xEq: 1170 });
+    eqLine(p, 'a', '(12 + 24) × 3 / 2', 340, m('centerd') + 1.6, { xEq: 1170 });
+    eqLine(p, 'a', '54', 440, m('centerd') + 2.6, { xEq: 1170, fill: COL.good });
+  }],
+  ['q3', 'Quick check', () => {
+    const p = panel(0);
+    const c1 = chip(p, ['m = 2'], COL.task, { x: 640, y: 350, size: 34, o: 0, s: .6 });
+    const c2 = chip(p, ['z = 15, 25'], COL.whole, { x: 950, y: 350, size: 34, o: 0, s: .6 });
+    pop(c1, .25); pop(c2, .45);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-center',
+    prompt: ['The center distance?'],
+    build: choice([['40 mm'], ['80 mm'], ['30 mm']], 0,
+      '(15 + 25) × 2 / 2 = 40.',
+      [null, 'That skips the halving: 40 × 2.', 'That uses the pinion teeth alone.']),
+  }], done) }],
+  ['wrap', 'Summary', (m) => {
+    const p = panel(0);
+    [['The module is the tooth size: d = module × teeth.', 'w1'],
+     ['Tips stand 1 m proud; roots cut 2.5 m below d.', 'w2'],
+     ['Gears mesh at the tooth sum times module, halved.', 'w3']].forEach(([str, mark], i) => {
+      const g = G(p, { x: -16, y: 280 + i * 150, o: 0 });
+      mk('circle', { cx: 200, cy: -12, r: 26, fill: COL.task }, g);
+      T(g, String(i + 1), { x: 200, y: -1, size: 30, fill: COL.board, weight: 700, anchor: 'middle' });
+      T(g, str, { x: 260, size: 33, weight: 600 });
+      tw(g, { o: 1, x: 0 }, m(mark), .6);
+    });
+    text(p, 'Now try the chapter practice.', 800, 820, m('end'), { size: 30, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['final1', 'Chapter practice', () => { panel(0); }, { ask: done => quiz(SCREEN, [
+    { id: 'p-d1',
+      prompt: ['Module 4; the pinion has 9 teeth, the gear 18. Find each pitch diameter, in millimeters.'],
+      build: blanks([{ parts: ['d1 = ', { box: '36' }],
+        why: 'm × z1 = 4 × 9 = 36.',
+        hint: 'Module times teeth.' }]) },
+    { id: 'p-d2',
+      prompt: ['The gear:'],
+      build: blanks([{ parts: ['d2 = ', { box: '72' }],
+        why: '4 × 18 = 72.',
+        hint: 'Same module, eighteen teeth.' }]) },
+    { id: 'p-a',
+      prompt: ['And the center distance?'],
+      build: blanks([{ parts: ['a = ', { box: '54' }],
+        why: '(9 + 18) × 4 / 2 = 54.',
+        hint: 'Tooth sum times module, halved.' }]) },
+  ], done, 'Chapter practice') }],
+  ['final2', 'Chapter practice', () => { panel(0); }, { ask: done => quiz(SCREEN, [
+    { id: 'p-da',
+      prompt: ['Module 2.5, a gear of 40 teeth. Find the tip diameter, in millimeters.'],
+      build: blanks([{ parts: ['da = ', { box: '105' }],
+        why: 'd = 2.5 × 40 = 100, and the tips add 2m = 5.',
+        hint: 'd + 2m, with d = 100.' }]) },
+    { id: 'p-df',
+      prompt: ['And the root diameter?'],
+      build: blanks([{ parts: ['df = ', { box: '93.75' }],
+        why: '100 − 2.5 × 2.5 = 93.75.',
+        hint: 'd − 2.5m = 100 − 6.25.' }]) },
+  ], done, 'Chapter practice') }],
+  ['finish', 'Finished', () => { panel(0); }, { ask: finishCard }],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>
