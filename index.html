@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web Books — animated, narrated lessons</title>
+<meta name="description" content="Animated, narrated, interactive web books: public-domain classics and B2B RevOps skills, built with Papermorph.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231d2b27'/%3E%3Ctext x='32' y='45' text-anchor='middle' font-size='48' fill='%23f0b45a'%3E∞%3C/text%3E%3C/svg%3E">
+<style>
+:root { color-scheme: dark; --page:#0f1613; --board:#1d2b27; --edge:#3a5047; --chalk:#ece8dc;
+  --dim:#9aaba3; --ui:"Segoe UI","Helvetica Neue",Arial,sans-serif; }
+* { box-sizing: border-box; }
+body { margin:0; min-height:100svh; background:var(--board); color:var(--chalk); font:18px/1.5 var(--ui);
+  display:flex; flex-direction:column; align-items:center; padding:64px 16px; }
+header { text-align:center; margin-bottom:48px; }
+header .kicker { margin:0 0 10px; font-size:14px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:#86c9e8; }
+header h1 { margin:0; font-size:clamp(34px, 6vw, 56px); font-weight:600; }
+header p { max-width:36em; margin:14px auto 0; color:var(--dim); }
+.shelf { display:grid; gap:22px; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); width:min(1060px, 100%); }
+a.book { display:block; text-decoration:none; color:inherit; background:#22322d; border:1.5px solid var(--edge);
+  border-top:6px solid var(--c); border-radius:18px; padding:26px 28px 22px; transition:transform .18s ease, box-shadow .18s ease; }
+a.book:hover { transform:translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,.4); }
+a.book .k { margin:0 0 8px; font-size:13px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--c); }
+a.book h2 { margin:0 0 10px; font-size:26px; font-weight:600; }
+a.book p { margin:0 0 16px; color:var(--dim); font-size:16px; }
+a.book .go { font-weight:600; color:var(--c); }
+footer { margin-top:56px; color:var(--dim); font-size:14px; text-align:center; }
+footer a { color:inherit; }
+</style>
+</head>
+<body>
+<header>
+  <p class="kicker">An animated bookshelf</p>
+  <h1>Web Books</h1>
+  <p>Lessons that draw and narrate the idea step by step, with interactive quick
+  checks and practice — built with <a href="https://github.com/DozenTwelve/Papermorph" style="color:inherit">Papermorph</a>.</p>
+</header>
+<main class="shelf">
+  <a class="book" href="a-first-book-in-algebra/index.html" style="--c:#f0b45a">
+    <p class="k">1895 · Wallace C. Boyden · public domain</p>
+    <h2>A First Book in Algebra</h2>
+    <p>Algebraic notation taught the Papermorph way: animated lessons, word-synced narration, interactive quick checks and chapter practice.</p>
+    <span class="go">Open the book →</span>
+  </a>
+  <a class="book" href="demand-gen-engine/index.html" style="--c:#86c9e8">
+    <p class="k">from the vynx-hq demand-gen-skill</p>
+    <h2>Demand Gen — The Engine</h2>
+    <p>The demand waterfall, the three levels of demand, the 3x-5x MOIN bar, and the always-on / program / signal tracks — animated and narrated.</p>
+    <span class="go">Open the book →</span>
+  </a>
+  <a class="book" href="abm-pilot/index.html" style="--c:#8fd6b0">
+    <p class="k">from the vynx-hq abm-skill</p>
+    <h2>ABM — The Pilot</h2>
+    <p>The fit checklist that gates honestly, the 3-tier / 3-list model, and why warm-up comes before activation — animated and narrated.</p>
+    <span class="go">Open the book →</span>
+  </a>
+</main>
+<footer>Press <b>Space</b> in a lesson to play · <b>?</b> shows keyboard shortcuts · progress is saved in your browser.<br>
+Lessons built with <a href="https://github.com/DozenTwelve/Papermorph">Papermorph</a> (engine under MIT — see /LICENSES). B2B skill lessons © vynx-hq.</footer>
+</body>
+</html>

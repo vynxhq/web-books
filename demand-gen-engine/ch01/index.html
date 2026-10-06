@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Demand Gen Engine — Demand Gen</title>
+<link rel="stylesheet" href="../lib/engine.css">
+<link rel="expect" href="#bar" blocking="render"><!-- hold the first frame until the player exists, so the page transition can run -->
+</head>
+<body>
+<script src="../lib/engine.js"></script>
+<script src="audio/en/timings.js"></script>
+<script>
+'use strict';
+const CHAPTER = { number: 1, title: 'The Demand Gen Engine', minutes: 6, language: 'en' };   // set next once the next chapter exists
+
+/* ---------- chapter drawing helpers ---------- */
+const text = (p, str, x, y, t0, { size = 30, fill = COL.chalk, anchor = 'start', weight = 500 } = {}) => { const e = T(p, str, { x, y, size, fill, anchor, weight, o: 0 }); show(e, t0); return e; };
+// One demand-level circle (drawn from scratch each beat: deterministic replays).
+const levelCircle = (p, x, r, name, months, color) => {
+  const g = G(p, { x, y: 400, o: 0 });
+  mk('circle', { r, fill: mix(COL.board, color, .3), stroke: color, 'stroke-width': 3 }, g);
+  T(g, name, { y: -6, size: 30, fill: COL.chalk, anchor: 'middle', weight: 600 });
+  T(g, months, { y: 34, size: 24, fill: COL.dim, anchor: 'middle' });
+  return g;
+};
+const arrowR = (p, x1, x2, y, t0) => {
+  const g = path(p, `M${x1} ${y}H${x2 - 16}M${x2 - 26} ${y - 12}L${x2} ${y}L${x2 - 26} ${y + 12}`, { stroke: COL.dim, 'stroke-width': 3 }, { o: 0 });
+  show(g, t0, .4);
+  return g;
+};
+
+/* ---------- beats: [id, title, run(m, D), { ask }?] ---------- */
+const BEATS = [
+  ['intro', 'The Demand Gen Engine', (m, D) => {
+    const g = G(scene, { o: 0, y: 24 });
+    T(g, 'Chapter 1', { x: 800, y: 320, size: 28, fill: COL.dim, anchor: 'middle' });
+    T(g, 'The Demand Gen Engine', { x: 800, y: 430, size: 88, weight: 600, anchor: 'middle' });
+    tw(g, { o: 1, y: 0 }, .2, 1.1, out);
+    const r = text(scene, 'Create demand — don\'t chase leads.', 800, 600, m('sub'), { size: 34, fill: COL.dim, anchor: 'middle' });
+    tw(g, { o: 0, y: -24 }, D - .9, .8); hide(r, D - .9, .8);
+  }],
+  ['waterfall', 'Three pillars', (m) => {
+    const p = panel(0);
+    const box = (x, label, sub, color, t0) => {
+      const g = G(p, { x, y: 300, o: 0 });
+      mk('rect', { y: 0, width: 420, height: 170, rx: 16, fill: mix(COL.board, color, .28), stroke: color, 'stroke-width': 2.5 }, g);
+      T(g, label, { x: 210, y: 75, size: 40, fill: COL.chalk, anchor: 'middle', weight: 600 });
+      T(g, sub, { x: 210, y: 120, size: 25, fill: COL.dim, anchor: 'middle' });
+      tw(g, { o: 1 }, t0, .5);
+      return g;
+    };
+    box(120, 'Awareness', 'teach the market', COL.whole, .3);
+    arrowR(p, 550, 650, 385, m('awareness') + .2);
+    box(640, 'Distribution', 'reach buyers where they are', COL.task, m('distribution'));
+    arrowR(p, 1070, 1170, 385, m('distribution') + .3);
+    box(1160, 'Capture', 'be found, be believed', COL.good, m('capture'));
+    text(p, 'Content is the product — distribution is the engine.', 800, 640, m('capture') + .8, { size: 32, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['levels', 'Three levels of demand', (m) => {
+    const p = panel(0);
+    draw(path(p, 'M280 620H1360', { stroke: COL.dim, 'stroke-width': 2.5, 'stroke-dasharray': '4 8' }), .3, .7);
+    text(p, 'time until buying', 1360, 668, .6, { size: 25, fill: COL.dim, anchor: 'end' });
+    const c1 = levelCircle(p, 500, 80, 'Content', '6–24 months out', COL.whole);
+    const c2 = levelCircle(p, 850, 105, 'Solution', '3–6 months out', COL.task);
+    const c3 = levelCircle(p, 1200, 130, 'Vendor', '1–3 months out', COL.nat);
+    tw(c1, { o: 1 }, m('content'), .5);
+    tw(c2, { o: 1 }, m('solution'), .5);
+    tw(c3, { o: 1 }, m('vendor'), .5);
+    text(p, 'each level needs different content', 830, 180, m('vendor') + .8, { size: 30, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['q1', 'Quick check', () => {
+    const p = panel(0);
+    const c = levelCircle(p, 800, 90, 'Content', '6–24 months out', COL.whole);
+    tw(c, { o: 1 }, .25, .5);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-level',
+    prompt: ['No vendor in mind — which level?'],
+    build: choice([['Content demand'], ['Solution demand'], ['Vendor demand']], 0,
+      'They are learning — build trust now.',
+      [null, 'That is earlier — they are still learning.', 'Vendor hunting comes last.']),
+  }], done) }],
+  ['engine', 'Three tracks', (m) => {
+    const p = panel(0);
+    const lane = (y, name, note, color, t0, build) => {
+      text(p, name, 320, y - 4, t0, { size: 30, fill: color, anchor: 'end', weight: 600 });
+      text(p, note, 320, y + 32, t0 + .2, { size: 23, fill: COL.dim, anchor: 'end' });
+      build(t0);
+    };
+    lane(250, 'Always-on', 'never stops', COL.whole, .3, (t0) => {
+      draw(path(p, 'M350 250H1450', { stroke: COL.whole, 'stroke-width': 4 }, { d: 0 }), t0, .9);
+      for (let i = 0; i < 10; i++) show(path(p, `M${430 + i * 113} 240V260`, { stroke: COL.whole, 'stroke-width': 2.5 }, { o: 0 }), t0 + .5 + i * .06, .3);
+    });
+    lane(430, 'Program', '6–12 weeks per push', COL.task, m('program'), (t0) => {
+      [0, 1, 2].forEach(i => {
+        const g = G(p, { x: 350 + i * 380, y: 406, o: 0 });
+        mk('rect', { width: 300, height: 48, rx: 10, fill: mix(COL.board, COL.task, .3), stroke: COL.task, 'stroke-width': 2 }, g);
+        tw(g, { o: 1 }, t0 + i * .25, .4);
+      });
+    });
+    lane(610, 'Signal', 'fires when a buyer moves', COL.nat, m('signal'), (t0) => {
+      draw(path(p, 'M350 610H1450', { stroke: COL.faint, 'stroke-width': 2, 'stroke-dasharray': '4 8' }), t0, .8);
+      [0, 1, 2, 3].forEach(i => {
+        const x = 560 + i * 300;
+        const g = G(p, { x, y: 610, o: 0 });
+        path(g, 'M0 0Q-14 -34 -2 -44', { stroke: COL.nat, 'stroke-width': 3.5, fill: 'none' });
+        mk('circle', { cy: -52, r: 6, fill: COL.nat }, g);
+        tw(g, { o: 1 }, t0 + .4 + i * .2, .3, back);
+      });
+    });
+    text(p, 'All three run at the same time.', 800, 760, m('together'), { size: 32, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['q2', 'Quick check', () => {
+    const p = panel(0);
+    const t = text(p, 'the market is not buying', 800, 380, .3, { size: 36, fill: COL.dim, anchor: 'middle' });
+    pulse(t, 1.1, 1.15);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-window',
+    prompt: ['Stay visible to the __% that is not buying.'],
+    build: blanks([{ parts: ['The engine protects the ', { box: '97' }, '% window.'],
+      why: 'When they finally buy, you are already on the shortlist.',
+      hint: 'Almost the whole market.' }]),
+  }], done) }],
+  ['capture', 'Why it works', (m) => {
+    const p = panel(0);
+    const c1 = levelCircle(p, 500, 55, 'Content', 'trust', COL.whole);
+    const c2 = levelCircle(p, 800, 72, 'Solution', 'education', COL.task);
+    const c3 = levelCircle(p, 1100, 88, 'Vendor', 'proof', COL.nat);
+    tw(c1, { o: 1 }, .3, .5); tw(c2, { o: 1 }, .45, .5); tw(c3, { o: 1 }, .6, .5);
+    const ring = mk('circle', { r: 118, fill: 'none', stroke: COL.task, 'stroke-width': 3.5, 'stroke-dasharray': '10 9' }, c3);
+    pulse(ring, m('ready'), 1.08);
+    text(p, '86% shortlist a vendor found before the buying process', 800, 560, m('ready') + .4, { size: 32, fill: COL.task, anchor: 'middle', weight: 600 });
+    text(p, 'be findable', 700, 680, m('proof'), { size: 30, fill: COL.good, anchor: 'middle' });
+    text(p, 'be believable', 940, 680, m('proof') + .3, { size: 30, fill: COL.good, anchor: 'middle' });
+  }],
+  ['q3', 'Quick check', () => {
+    const p = panel(0);
+    const c1 = chip(p, ['inquiry'], COL.nat, { x: 640, y: 350, size: 32, o: 0, s: .6 });
+    const c2 = chip(p, ['names competitors'], COL.task, { x: 960, y: 350, size: 32, o: 0, s: .6 });
+    pop(c1, .25); pop(c2, .45);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-track',
+    prompt: ['A hot inquiry names competitors. Which track?'],
+    build: choice([['Always-on'], ['Program-based'], ['Signal-based']], 2,
+      'Signals trigger reactive execution.',
+      ['Always-on never stops — it does not react.', 'Programs run to planned dates.', null]),
+  }], done) }],
+  ['wrap', 'Summary', (m) => {
+    const p = panel(0);
+    [['Create demand; don\'t chase leads.', 'w1'],
+     ['Three demand levels, three jobs: trust, education, proof.', 'w2'],
+     ['Run all three tracks at once — always-on, program, signal.', 'w3']].forEach(([str, mark], i) => {
+      const g = G(p, { x: -16, y: 280 + i * 150, o: 0 });
+      mk('circle', { cx: 200, cy: -12, r: 26, fill: COL.task }, g);
+      T(g, String(i + 1), { x: 200, y: -1, size: 30, fill: COL.board, weight: 700, anchor: 'middle' });
+      T(g, str, { x: 260, size: 33, weight: 600 });
+      tw(g, { o: 1, x: 0 }, m(mark), .6);
+    });
+    text(p, 'Now try the chapter practice.', 800, 820, m('end'), { size: 30, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['final1', 'Chapter practice', () => { panel(0); }, { ask: done => quiz(SCREEN, [
+    { id: 'p-program',
+      prompt: ['In the long-cycle engine, one program-based initiative runs a planned range of weeks. Fill it in.'],
+      build: blanks([{ parts: ['One program: ', { box: '6' }, ' to ', { box: '12' }, ' weeks.'],
+        why: 'Programs alternate on top of the always-on base, 6–12 weeks each.',
+        hint: 'The long-cycle customization: weeks per program.' }]),
+    },
+  ], done, 'Chapter practice') }],
+  ['final2', 'Chapter practice', () => { panel(0); }, { ask: done => quiz(SCREEN, [
+    { id: 'p-moin',
+      prompt: ['The MOIN bar: when does a piece of content deserve to be produced?'],
+      build: blanks([{ parts: ['Produce only what is ', { box: '3' }, ' to ', { box: '5' }, '× better than the current #1.'],
+        why: 'Below that bar you will not displace the incumbent — skip or re-angle.',
+        hint: 'The 3x-5x rule.' }]),
+    },
+  ], done, 'Chapter practice') }],
+  ['finish', 'Finished', () => { panel(0); }, { ask: finishCard }],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>

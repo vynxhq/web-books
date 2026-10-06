@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The ABM Pilot — ABM</title>
+<link rel="stylesheet" href="../lib/engine.css">
+<link rel="expect" href="#bar" blocking="render"><!-- hold the first frame until the player exists, so the page transition can run -->
+</head>
+<body>
+<script src="../lib/engine.js"></script>
+<script src="audio/en/timings.js"></script>
+<script>
+'use strict';
+const CHAPTER = { number: 1, title: 'The ABM Pilot', minutes: 6, language: 'en' };   // set next once the next chapter exists
+
+/* ---------- chapter drawing helpers ---------- */
+const text = (p, str, x, y, t0, { size = 30, fill = COL.chalk, anchor = 'start', weight = 500 } = {}) => { const e = T(p, str, { x, y, size, fill, anchor, weight, o: 0 }); show(e, t0); return e; };
+
+/* ---------- beats: [id, title, run(m, D), { ask }?] ---------- */
+const BEATS = [
+  ['intro', 'The ABM Pilot', (m, D) => {
+    const g = G(scene, { o: 0, y: 24 });
+    T(g, 'Chapter 1', { x: 800, y: 320, size: 28, fill: COL.dim, anchor: 'middle' });
+    T(g, 'The ABM Pilot', { x: 800, y: 430, size: 88, weight: 600, anchor: 'middle' });
+    tw(g, { o: 1, y: 0 }, .2, 1.1, out);
+    const r = text(scene, 'Precision beats volume — pick, warm up, then activate.', 800, 600, m('sub'), { size: 34, fill: COL.dim, anchor: 'middle' });
+    tw(g, { o: 0, y: -24 }, D - .9, .8); hide(r, D - .9, .8);
+  }],
+  ['fit', 'The fit checklist', (m) => {
+    const p = panel(0);
+    const items = [
+      ['Deal size ≥ $30k', 'good'], ['Committee ≥ 3', 'good'], ['Clear ICP', 'good'],
+      ['Content capability', 'good'], ['Sales cycle ≥ 6 mo', 'flag'], ['Sponsorship', 'dim'],
+    ];
+    items.forEach(([str, kind], i) => {
+      const x = 130 + (i % 3) * 470, y = 210 + Math.floor(i / 3) * 190;
+      const g = G(p, { x, y, o: 0 });
+      const col = kind === 'good' ? COL.good : kind === 'flag' ? COL.task : COL.faint;
+      mk('rect', { width: 420, height: 120, rx: 14, fill: mix(COL.board, col, kind === 'dim' ? .08 : .22), stroke: col, 'stroke-width': 2.5 }, g);
+      T(g, str, { x: 30, y: 52, size: 29, fill: kind === 'dim' ? COL.dim : COL.chalk, weight: 600 });
+      T(g, kind === 'good' ? '✓' : kind === 'flag' ? '! fix or adapt' : 'n/a — solo', { x: 30, y: 94, size: 25, fill: col, weight: 600 });
+      tw(g, { o: 1 }, .2 + i * .18, .4, back);
+    });
+    text(p, 'the checklist gates — it doesn\'t decorate', 800, 660, m('flag'), { size: 30, fill: COL.task, anchor: 'middle', weight: 600 });
+  }],
+  ['q1', 'Quick check', () => {
+    const p = panel(0);
+    const c = chip(p, ['ACV ≥ ?'], COL.task, { x: 800, y: 350, size: 38, o: 0, s: .6 });
+    pop(c, .25);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-acv',
+    prompt: ['Minimum deal size for ABM to pay off?'],
+    build: choice([['$3,000'], ['$300,000'], ['$30,000']], 2,
+      'Below $30k, personalization costs more than the deal.',
+      ['Far too low — ABM economics need bigger deals.', 'That is enterprise-only; the bar is lower.', null]),
+  }], done) }],
+  ['tiers', 'Three tiers', (m) => {
+    const p = panel(0);
+    const row = (y, w, name, desc, color, t0) => {
+      const g = G(p, { x: 800 - w / 2, y, o: 0 });
+      mk('rect', { width: w, height: 100, rx: 14, fill: mix(COL.board, color, .26), stroke: color, 'stroke-width': 2.5 }, g);
+      T(g, name, { x: w / 2, y: 40, size: 32, fill: COL.chalk, anchor: 'middle', weight: 600 });
+      T(g, desc, { x: w / 2, y: 76, size: 24, fill: COL.dim, anchor: 'middle' });
+      tw(g, { o: 1 }, t0, .5);
+      return g;
+    };
+    row(200, 460, 'Tier 1 — one to one', '5–20 accounts, fully personal', COL.task, m('t1'));
+    row(340, 860, 'Tier 2 — one to few', 'clusters get shared, tailored content', COL.whole, m('t2'));
+    row(480, 1240, 'Tier 3 — one to many', 'mostly automated, wide but shallow', COL.faint, m('t3'));
+    text(p, 'personalization depth', 800, 650, m('t3') + .6, { size: 28, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['q2', 'Quick check', () => {
+    const p = panel(0);
+    const c = chip(p, ['Tier 1 — 1:1'], COL.task, { x: 800, y: 350, size: 36, o: 0, s: .6 });
+    pop(c, .25);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-tier',
+    prompt: ['Tier 1 stays personal — but only within a range. Fill it in.'],
+    build: blanks([{ parts: ['Tier 1: ', { box: '5' }, ' to ', { box: '20' }, ' accounts.'],
+      why: 'Past ~20 accounts, 1:1 personalization stops scaling.',
+      hint: 'The tier model range.' }]),
+  }], done) }],
+  ['lists', 'Three lists', (m) => {
+    const p = panel(0);
+    const col = (x, name, sub, color, t0) => {
+      const g = G(p, { x, y: 250, o: 0 });
+      mk('rect', { width: 380, height: 150, rx: 14, fill: mix(COL.board, color, .22), stroke: color, 'stroke-width': 2.5 }, g);
+      T(g, name, { x: 190, y: 62, size: 32, fill: COL.chalk, anchor: 'middle', weight: 600 });
+      T(g, sub, { x: 190, y: 105, size: 24, fill: COL.dim, anchor: 'middle' });
+      tw(g, { o: 1 }, t0, .5);
+      return g;
+    };
+    col(140, 'Cluster', 'interesting, not moving', COL.dim, m('cluster'));
+    col(610, 'Future Pipeline', 'signals worth watching', COL.whole, m('future'));
+    col(1080, 'Active Focus', 'need confirmed — the shortlist', COL.task, m('active'));
+    const arrowR = (x1, x2, y, t0) => {
+      const g = path(p, `M${x1} ${y}H${x2 - 14}M${x2 - 24} ${y - 11}L${x2} ${y}L${x2 - 24} ${y + 11}`, { stroke: COL.dim, 'stroke-width': 3 }, { o: 0 });
+      show(g, t0, .35);
+    };
+    arrowR(528, 602, 325, m('future') + .4);
+    arrowR(998, 1072, 325, m('active') + .4);
+    text(p, '2+ engagements in 30 days', 565, 470, m('future') + .7, { size: 25, fill: COL.whole, anchor: 'middle' });
+    text(p, 'need confirmed in conversation', 1035, 470, m('active') + .9, { size: 25, fill: COL.whole, anchor: 'middle' });
+    text(p, 'accounts move as they engage', 800, 620, m('active') + 1.4, { size: 28, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['q3', 'Quick check', () => {
+    const p = panel(0);
+    const c1 = chip(p, ['2 engagements'], COL.whole, { x: 620, y: 350, size: 32, o: 0, s: .6 });
+    const c2 = chip(p, ['30 days'], COL.task, { x: 960, y: 350, size: 32, o: 0, s: .6 });
+    pop(c1, .25); pop(c2, .45);
+  }, { ask: done => quiz(BAND, [{
+    id: 'c-move',
+    prompt: ['Two engagements in 30 days — where to?'],
+    build: choice([['Future Pipeline'], ['Active Focus'], ['Stays on Cluster']], 0,
+      'That is the Cluster-to-Future threshold.',
+      [null, 'Active Focus needs confirmed need.', 'The threshold is met — move it.']),
+  }], done) }],
+  ['warmup', 'Warm up first', (m) => {
+    const p = panel(0);
+    text(p, 'cold outreach', 340, 300, .3, { size: 30, fill: COL.bad, anchor: 'end', weight: 600 });
+    const cold = rect(p, 380, 258, 120, 60, mix(COL.board, COL.bad, .4), 0, COL.bad);
+    tw(cold, { o: 1 }, .4, .5);
+    text(p, '< 5% respond', 380, 370, .6, { size: 27, fill: COL.bad });
+    text(p, 'warmed accounts', 340, 500, m('warm'), { size: 30, fill: COL.good, anchor: 'end', weight: 600 });
+    const warm = rect(p, 380, 458, 1000, 60, mix(COL.board, COL.good, .4), 0, COL.good);
+    put(warm, { a_width: 0 });
+    tw(warm, { o: 1, a_width: 1000 }, m('warm'), 1.1);
+    text(p, '30–70% respond', 1380, 570, m('warm') + 1.1, { size: 27, fill: COL.good, anchor: 'end' });
+    text(p, 'same people, same message — but they know you', 800, 700, m('warm') + 1.6, { size: 30, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['wrap', 'Summary', (m) => {
+    const p = panel(0);
+    [['ABM is precision on ICP-fit accounts, not spray and pray.', 'w1'],
+     ['Tiers set the effort; lists set the urgency.', 'w2'],
+     ['Warm up before activation — always.', 'w3']].forEach(([str, mark], i) => {
+      const g = G(p, { x: -16, y: 280 + i * 150, o: 0 });
+      mk('circle', { cx: 200, cy: -12, r: 26, fill: COL.task }, g);
+      T(g, String(i + 1), { x: 200, y: -1, size: 30, fill: COL.board, weight: 700, anchor: 'middle' });
+      T(g, str, { x: 260, size: 33, weight: 600 });
+      tw(g, { o: 1, x: 0 }, m(mark), .6);
+    });
+    text(p, 'Now try the chapter practice.', 800, 820, m('end'), { size: 30, fill: COL.dim, anchor: 'middle' });
+  }],
+  ['final1', 'Chapter practice', () => { panel(0); }, { ask: done => quiz(SCREEN, [
+    { id: 'p-pilot',
+      prompt: ['You never launch ABM at full scale. Prove the model on a pilot range of accounts.'],
+      build: blanks([{ parts: ['Pilot on ', { box: '20' }, ' to ', { box: '50' }, ' accounts, then operationalize, then scale.'],
+        why: 'The skill\'s rule: pilot, operationalize, scale — never a full-scale launch.',
+        hint: 'The pilot range.' }]),
+    },
+  ], done, 'Chapter practice') }],
+  ['final2', 'Chapter practice', () => { panel(0); }, { ask: done => quiz(SCREEN, [
+    { id: 'p-warm',
+      prompt: ['The warm-up numbers — the business case for warming up before outreach.'],
+      build: blanks([{ parts: ['Cold outreach converts under ', { box: '5' }, '%; warmed accounts respond from ', { box: '30' }, '% upward.'],
+        why: 'Warm-up multiplies response rates six-fold — same people, same message.',
+        hint: 'Under 5% cold; 30–70% warm.' }]),
+    },
+  ], done, 'Chapter practice') }],
+  ['finish', 'Finished', () => { panel(0); }, { ask: finishCard }],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>
